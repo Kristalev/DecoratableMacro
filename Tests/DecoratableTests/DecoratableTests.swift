@@ -9,40 +9,156 @@ import XCTest
 import DecoratableMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "Decoratable": DecoratableMacro.self,
 ]
 #endif
 
 final class DecoratableTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(DecoratableMacros)
+    func testEmptyProtocolWithDecoratable() throws {
         assertMacroExpansion(
             """
-            #stringify(a + b)
+            @Decoratable
+            protocol TestProtocol { }
             """,
             expandedSource: """
-            (a + b, "a + b")
+            protocol TestProtocol { }
             """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
 
-    func testMacroWithStringLiteral() throws {
-        #if canImport(DecoratableMacros)
+    func testProtocolWithOneFunctionWithDecoratable() throws {
         assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
+            """
+            @Decoratable
+            protocol Foo { 
+                func bar()
+            }
+            """,
+            expandedSource: """
+            protocol Foo { 
+                func bar()
+            }
+            
+            class FooDecorator: Foo {
+                private var decoree: any Foo
+                 init(_ decoree: any Foo) {
+                    self.decoree = decoree
+                }
+                 func bar() {
+                    decoree.bar()
+                }
+            }
+            """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
+    }
+
+    func testProtocolWithOneFunctionWithReturnDecoratable() throws {
+        assertMacroExpansion(
+            """
+            @Decoratable
+            protocol Foo { 
+                func bar() -> Int
+            }
+            """,
+            expandedSource: """
+            protocol Foo { 
+                func bar() -> Int
+            }
+            
+            class FooDecorator: Foo {
+                private var decoree: any Foo
+                 init(_ decoree: any Foo) {
+                    self.decoree = decoree
+                }
+                 func bar() -> Int {
+                    decoree.bar()
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
+    func testProtocolWithOneFunctionWithOneParameterDecoratable() throws {
+        assertMacroExpansion(
+            """
+            @Decoratable
+            protocol Foo { 
+                func bar(a: Int)
+            }
+            """,
+            expandedSource: """
+            protocol Foo { 
+                func bar(a: Int)
+            }
+            
+            class FooDecorator: Foo {
+                private var decoree: any Foo
+                 init(_ decoree: any Foo) {
+                    self.decoree = decoree
+                }
+                 func bar(a: Int) {
+                    decoree.bar(a: a)
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
+    func testPublicProtocolWithOneFunctionWithOneParameterDecoratable() throws {
+        assertMacroExpansion(
+            """
+            @Decoratable
+            public protocol Foo { 
+                func bar(a: Int)
+            }
+            """,
+            expandedSource: """
+            public protocol Foo { 
+                func bar(a: Int)
+            }
+            
+            open class FooDecorator: Foo {
+                private var decoree: any Foo
+                public init(_ decoree: any Foo) {
+                    self.decoree = decoree
+                }
+                open func bar(a: Int) {
+                    decoree.bar(a: a)
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
+    func testProtocolWithOneMutatingFunctionWithDecoratable() throws {
+        assertMacroExpansion(
+            """
+            @Decoratable
+            protocol Foo { 
+                mutating func bar()
+            }
+            """,
+            expandedSource: """
+            protocol Foo { 
+                mutating func bar()
+            }
+            
+            class FooDecorator: Foo {
+                private var decoree: any Foo
+                 init(_ decoree: any Foo) {
+                    self.decoree = decoree
+                }
+                 func bar() {
+                    decoree.bar()
+                }
+            }
+            """,
+            macros: testMacros
+        )
     }
 }

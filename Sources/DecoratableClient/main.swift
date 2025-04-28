@@ -1,8 +1,24 @@
 import Decoratable
 
-let a = 17
-let b = 25
+@Decoratable
+public protocol Router {
+    mutating func push(view: String)
+}
 
-let (result, code) = #stringify(a + b)
+struct ApplicationRouter: Router {
+    var path: String = ""
 
-print("The value \(result) was produced by the code \"\(code)\"")
+    mutating func push(view: String) {
+        path.append(view)
+    }
+}
+
+final class LoggableRouter: RouterDecorator {
+    override func push(view: String) {
+        print("Pushed view: \(view)")
+        super.push(view: view)
+    }
+}
+
+let router = LoggableRouter(ApplicationRouter())
+router.push(view: "Main")
